@@ -50,17 +50,27 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
-        .top-img-area img.screen-bg, #bg-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+        .top-img-area img.screen-bg, #bg-image, .top-img-area img.blink-anim {
+            width: var(--base-img-w, 100%);
+            height: var(--base-img-h, 100%);
+            object-fit: fill;
+            flex-shrink: 0;
             display: block;
             z-index: 1;
         }
 
+        .top-img-area img.screen-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
         .bottom-ui-area {
+            flex-shrink: 0;
             width: 1280px;
             height: 120px;
             display: flex;
@@ -77,18 +87,9 @@
             text-shadow: 2px 2px 4px #000;
         }
 
-        img.screen-bg-absolute {
-            width: 1280px;
-            height: 600px;
-            object-fit: contain;
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 1;
-        }
-
         #result-content {
             position: absolute;
-            bottom: 170px;
+            bottom: 50px;
             width: 100%;
             z-index: 2;
             display: flex;
@@ -266,9 +267,6 @@
         }
         .blink-anim {
             animation: blinkAnim 1.5s infinite ease-in-out;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
         }
 
         .menu-btn-container {
@@ -443,7 +441,7 @@
         <div id="menu-screen" class="screen hidden">
             <div class="top-img-area">
                 <img src="images/bg.png" class="screen-bg" alt="背景">
-                <img src="images/menu.png" class="screen-bg" alt="メニュー" style="position: absolute; top: 0; left: 0; z-index: 1;">
+                <img src="images/menu.png" class="screen-bg screen-overlay" alt="メニュー">
                 <div class="menu-btn-container">
                     <button type="button" class="pill-btn menu-pill-btn" onclick="showDifficultyModal()">あそぶ</button>
                     <button type="button" class="pill-btn menu-pill-btn" onclick="showRecordList()">レコード</button>
@@ -577,16 +575,19 @@
         </div>
 
         <div id="result-screen" class="screen hidden" onclick="location.reload()">
-            <img src="images/result.png" class="screen-bg-absolute" alt="リザルト">
-            <div id="result-content">
-                <div id="res-mode" class="text-yellow"></div>
-                <div id="best-score-label" class="text-yellow hidden">ベストスコア更新！</div>
-                <div>あなたのレコード</div>
-                <div>正解数：<span id="res-correct">0</span></div>
-                <div id="res-time">0時間 0分 0秒</div>
-                <div>取得した日時：</div>
-                <div id="res-date"></div>
+            <div class="top-img-area">
+                <img src="images/result.png" class="screen-bg" alt="リザルト">
+                <div id="result-content">
+                    <div id="res-mode" class="text-yellow"></div>
+                    <div id="best-score-label" class="text-yellow hidden">ベストスコア更新！</div>
+                    <div>あなたのレコード</div>
+                    <div>正解数：<span id="res-correct">0</span></div>
+                    <div id="res-time">0時間 0分 0秒</div>
+                    <div>取得した日時：</div>
+                    <div id="res-date"></div>
+                </div>
             </div>
+            <div class="bottom-ui-area"></div>
         </div>
     </div>
 
@@ -598,6 +599,25 @@
         }
         window.addEventListener('resize', resizeApp);
         document.addEventListener('DOMContentLoaded', resizeApp);
+
+        // ===== IMAGE SIZE (title.png based) =====
+        function lockImageSizeToTitle() {
+            const titleImg = document.querySelector('#title-screen img.screen-bg');
+            const applySize = () => {
+                if (!titleImg.naturalWidth || !titleImg.naturalHeight) return;
+                const area = titleImg.closest('.top-img-area');
+                const scale = Math.min(area.clientWidth / titleImg.naturalWidth, area.clientHeight / titleImg.naturalHeight);
+                const app = document.getElementById('app');
+                app.style.setProperty('--base-img-w', (titleImg.naturalWidth * scale) + 'px');
+                app.style.setProperty('--base-img-h', (titleImg.naturalHeight * scale) + 'px');
+            };
+            if (titleImg.complete) {
+                applySize();
+            } else {
+                titleImg.addEventListener('load', applySize, { once: true });
+            }
+        }
+        lockImageSizeToTitle();
 
         const GAME_CONFIG = {
             maxQuestions: 100,
@@ -617,7 +637,8 @@
             defaultVolume: 100,
             loadingBeforeGameMs: 3000,
             audioBgm: 'sounds/bgm.mp3',
-            bgmVolumeRate: 0.25,
+            bgmVolumeRate: 0.125,
+            decideVolumeRate: 0.5,
             audioHakusyu: 'sounds/hakusyu.mp3'
         };
 
@@ -683,7 +704,7 @@
             sndBgm.volume = musicVolume * GAME_CONFIG.bgmVolumeRate;
             gameSounds.forEach(snd => { snd.volume = gameVolume; });
             answerSounds.forEach(snd => { snd.volume = gameVolume * GAME_CONFIG.answerVolumeRate; });
-            systemSounds.forEach(snd => { snd.volume = systemVolume; });
+            sndDecide.volume = systemVolume * GAME_CONFIG.decideVolumeRate;
         }
 
         function updateSettingUI() {
@@ -733,23 +754,11 @@
             });
         }
 
-        function fitLoadingImageToBackground() {
-            const loadingImg = document.getElementById('loading-img');
-            const area = loadingImg.closest('.top-img-area');
-            const bgImg = area.querySelector('img.screen-bg');
-            if (!bgImg.naturalWidth || !bgImg.naturalHeight) return;
-            const scale = Math.min(area.clientWidth / bgImg.naturalWidth, area.clientHeight / bgImg.naturalHeight);
-            loadingImg.style.width = (bgImg.naturalWidth * scale) + 'px';
-            loadingImg.style.height = (bgImg.naturalHeight * scale) + 'px';
-            loadingImg.style.objectFit = 'fill';
-        }
-
         function showLoadingScreen() {
             playDecide();
             document.getElementById('title-screen').onclick = null;
             document.getElementById('title-screen').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
-            fitLoadingImageToBackground();
             setTimeout(() => {
                 document.getElementById('loading-screen').classList.add('hidden');
                 document.getElementById('menu-screen').classList.remove('hidden');
@@ -852,7 +861,6 @@
             currentMode = mode;
             document.getElementById('difficulty-modal').classList.add('hidden');
             document.getElementById('loading-screen').classList.remove('hidden');
-            fitLoadingImageToBackground();
             setTimeout(() => {
                 document.getElementById('loading-screen').classList.add('hidden');
                 if (tutorialEnabled) {

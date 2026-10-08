@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ツーオアスリーおじさん</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #app {
+            width: 1280px;
+            height: 720px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center;
+            background-color: #000;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: #000;
+        }
+
+        #title-screen, #result-screen {
+            cursor: pointer;
+        }
+
+        .hidden { display: none !important; }
+
+        .top-img-area {
+            position: relative;
+            width: 1280px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .top-img-area img.screen-bg, #bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            z-index: 1;
+        }
+
+        .bottom-ui-area {
+            width: 1280px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            z-index: 10;
+        }
+
+        #start-text {
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        img.screen-bg-absolute {
+            width: 1280px;
+            height: 600px;
+            object-fit: contain;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
+        }
+
+        #result-content {
+            position: absolute;
+            bottom: 170px;
+            width: 100%;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            font-size: 30px;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'HG丸ｺﾞｼｯｸM-PRO', 'ヒラギノ丸ゴ ProN', 'Hiragino Maru Gothic ProN', 'メイリオ', Meiryo, sans-serif;
+        }
+
+        .text-yellow { color: #ffeb3b; font-weight: bold; }
+
+        #game-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 1280px;
+            height: 720px;
+            z-index: 10;
+        }
+
+        #screen-area {
+            position: relative;
+            background-color: #000;
+        }
+
+        #number-display {
+            position: absolute;
+            z-index: 2;
+            font-size: 150px;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            font-weight: normal;
+            color: #ffffff;
+        }
+
+        #anim-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center; align-items: center;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        #anim-img { opacity: 0; transform: scale(0.1); }
+
+        @keyframes zoomIn {
+            0% { opacity: 1; transform: scale(0.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .zoom-anim {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            animation: zoomIn 1.5s ease-out forwards;
+        }
+
+        #ui-area {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #button-container {
+            display: flex;
+            gap: 100px;
+        }
+
+        #button-container button {
+            width: 180px;
+            height: 80px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            border: 4px solid #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 4px;
+            box-sizing: border-box;
+            transition: transform 0.1s;
+        }
+
+        #btn-circle { background-color: #ff4d4d; }
+        #btn-cross { background-color: #3399ff; }
+
+        #button-container button:active { transform: scale(0.9); }
+        #button-container button:disabled { filter: grayscale(80%); cursor: not-allowed; transform: none; }
+
+        #counter {
+            position: absolute;
+            bottom: 20px;
+            right: 300px;
+            color: #fff;
+            z-index: 5;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: normal;
+        }
+
+        #current-q { font-size: 60px; transform: translateY(-30%); margin-right: -0.1em; }
+        #counter .slash { font-size: 100px; font-weight: 100; line-height: 1; }
+        #max-q { font-size: 40px; transform: translateY(35%); margin-left: -0.1em; }
+
+        #difficulty-modal {
+            z-index: 100;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .diff-btn-container { display: flex; gap: 40px; }
+
+
+
+        /* ===== Pill-shaped UI buttons (replicates normal_off.png / normal_on.png) ===== */
+        .pill-btn {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Marker Felt', 'HG丸ｺﾞｼｯｸM-PRO', 'ヒラギノ丸ゴ ProN', 'Hiragino Maru Gothic ProN', 'メイリオ', Meiryo, sans-serif;
+            color: #ffffff;
+            background-color: #9a6120;
+            border: 4px solid #d9d2cb;
+            border-radius: 999px;
+            box-sizing: border-box;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+            transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+        }
+
+        .pill-btn:hover {
+            background-color: #e8822e;
+            border-color: #ffffff;
+        }
+
+        .pill-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Difficulty select screen buttons (ノーマル / プロ) */
+        .diff-btn {
+            width: 300px;
+            height: 100px;
+            font-size: 40px;
+        }
+
+        /* Menu screen buttons (あそぶ / レコード / ことば / せってい) */
+        .menu-pill-btn {
+            width: 240px;
+            height: 68px;
+            font-size: 28px;
+        }
+
+        @keyframes blinkAnim {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .blink-anim {
+            animation: blinkAnim 1.5s infinite ease-in-out;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .menu-btn-container {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 40px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 20px;
+            z-index: 5;
+        }
+
+        /* ===== Option screens (レコード / ことば / せってい) ===== */
+        .option-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #ffffff;
+            font-family: 'HG丸ｺﾞｼｯｸM-PRO', 'ヒラギノ丸ゴ ProN', 'Hiragino Maru Gothic ProN', 'メイリオ', Meiryo, sans-serif;
+        }
+
+        .option-title {
+            margin: 36px 0 30px 0;
+            font-size: 50px;
+            font-weight: normal;
+            letter-spacing: 12px;
+        }
+
+        .option-rows {
+            display: grid;
+            grid-template-columns: 220px 540px;
+            column-gap: 18px;
+            row-gap: 28px;
+            align-items: center;
+            margin-right: 160px;
+        }
+
+        .option-label {
+            font-size: 30px;
+            letter-spacing: 4px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .option-value { font-size: 30px; letter-spacing: 2px; }
+
+        .option-control {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+        }
+
+        .option-gap { margin-top: 20px; }
+
+        .option-btn {
+            width: 190px;
+            height: 52px;
+            font-size: 26px;
+        }
+
+        .option-btn.wide { width: 250px; }
+
+        .toggle-btn { color: #b5a690; }
+        .toggle-btn.selected { color: #ffffff; }
+
+        .vol-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 540px;
+            height: 22px;
+            margin: 0;
+            border-radius: 11px;
+            background: linear-gradient(to right, #f2f2f2 var(--fill, 100%), #4a4a4a var(--fill, 100%));
+            cursor: pointer;
+            outline: none;
+        }
+
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: transparent;
+        }
+
+        .vol-slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border: none;
+            background: transparent;
+        }
+
+        .tutorial-content {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            z-index: 2;
+        }
+        .tutorial-title {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 48px;
+            letter-spacing: 10px;
+            z-index: 3;
+            font-family: 'Hiragino Maru Gothic ProN', 'HG丸ゴシックM-PRO', 'ヒラギノ丸ゴ ProN', 'メイリオ', Meiryo, sans-serif;
+        }
+        .tutorial-left {
+            position: absolute;
+            left: 0; top: 0;
+            width: 50%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+        }
+        .tutorial-right {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 48px;
+            line-height: 1.6;
+            text-align: center;
+            padding-left: 300px;
+            margin-top: 80px;
+            font-family: 'Hiragino Maru Gothic ProN', 'HG丸ゴシックM-PRO', 'ヒラギノ丸ゴ ProN', 'メイリオ', Meiryo, sans-serif;
+        }
+        .dummy-btn {
+            width: 180px; height: 80px;
+            font-size: 32px; font-weight: bold; color: #fff;
+            border: 4px solid #fff; border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            padding-bottom: 4px; box-sizing: border-box;
+            font-family: 'Hiragino Maru Gothic ProN', 'HG丸ゴシックM-PRO', 'ヒラギノ丸ゴ ProN', 'メイリオ', Meiryo, sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div id="title-screen" class="screen" onclick="showLoadingScreen()">
+            <div class="top-img-area">
+                <img src="images/title.png" class="screen-bg" alt="タイトル">
+            </div>
+            <div class="bottom-ui-area">
+                <div id="start-text">CLICK TO START</div>
+            </div>
+        </div>
+
+        <div id="loading-screen" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="modal-content">
+                    <img id="loading-img" src="images/loading.png" class="blink-anim" alt="Loading">
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="menu-screen" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <img src="images/menu.png" class="screen-bg" alt="メニュー" style="position: absolute; top: 0; left: 0; z-index: 1;">
+                <div class="menu-btn-container">
+                    <button type="button" class="pill-btn menu-pill-btn" onclick="showDifficultyModal()">あそぶ</button>
+                    <button type="button" class="pill-btn menu-pill-btn" onclick="showRecordList()">レコード</button>
+                    <button type="button" class="pill-btn menu-pill-btn" onclick="showLanguage()">ことば</button>
+                    <button type="button" class="pill-btn menu-pill-btn" onclick="showSetting()">せってい</button>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="record-list-screen" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="option-screen">
+                    <h2 class="option-title">レコード</h2>
+                    <div class="option-rows">
+                        <div class="option-label">ノーマル</div>
+                        <div id="record-text-normal" class="option-value">きろくなし</div>
+                        <div class="option-label">プロ</div>
+                        <div id="record-text-pro" class="option-value">きろくなし</div>
+                        <div class="option-gap"></div>
+                        <div class="option-control option-gap">
+                            <button type="button" class="pill-btn option-btn wide" onclick="backToMenu('record-list-screen')">もどる</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="setting-screen" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="option-screen">
+                    <h2 class="option-title">せってい</h2>
+                    <div class="option-rows">
+                        <div class="option-label">音楽</div>
+                        <input type="range" id="vol-music" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('music', this.value)">
+                        <div class="option-label">ゲーム</div>
+                        <input type="range" id="vol-game" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('game', this.value)">
+                        <div class="option-label">システム</div>
+                        <input type="range" id="vol-system" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('system', this.value)">
+                        <div class="option-label">マスター</div>
+                        <input type="range" id="vol-master" class="vol-slider" min="0" max="100" value="100" oninput="changeVolume('master', this.value)">
+                        <div class="option-label option-gap">チュートリアル</div>
+                        <div class="option-control option-gap">
+                            <button id="tutorial-on" type="button" class="pill-btn option-btn toggle-btn" onclick="setTutorialEnabled(true)">オン</button>
+                            <button id="tutorial-off" type="button" class="pill-btn option-btn toggle-btn" onclick="setTutorialEnabled(false)">オフ</button>
+                        </div>
+                        <div></div>
+                        <div class="option-control">
+                            <button type="button" class="pill-btn option-btn wide" onclick="resetSettings()">リセット</button>
+                            <button type="button" class="pill-btn option-btn wide" onclick="backToMenu('setting-screen')">もどる</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="language-screen" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="option-screen">
+                    <h2 class="option-title">ことば</h2>
+                    <div class="option-rows">
+                        <div class="option-label">ことば</div>
+                        <div class="option-control">
+                            <button id="lang-btn-ja" type="button" class="pill-btn option-btn toggle-btn" onclick="setLanguage('ja')">日本語</button>
+                            <button id="lang-btn-en" type="button" class="pill-btn option-btn toggle-btn" onclick="setLanguage('en')">English</button>
+                        </div>
+                        <div class="option-gap"></div>
+                        <div class="option-control option-gap">
+                            <button type="button" class="pill-btn option-btn wide" onclick="backToMenu('language-screen')">もどる</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="tutorial-screen" class="screen hidden" onclick="nextTutorial()" style="cursor: pointer;">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="tutorial-title">チュートリアル</div>
+                <div class="tutorial-content">
+                    <div class="tutorial-left">
+                        <div class="dummy-btn" style="background-color: #ff4d4d;">はい</div>
+                        <div class="dummy-btn" style="background-color: #3399ff;">いいえ</div>
+                    </div>
+                    <div class="tutorial-right">
+                        <div id="tutorial-text">３か４の倍数なら<br>はい</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="difficulty-modal" class="screen hidden">
+            <div class="top-img-area">
+                <img src="images/bg.png" class="screen-bg" alt="背景">
+                <div class="modal-content">
+                    <div class="diff-btn-container">
+                        <button id="btn-normal" type="button" class="pill-btn diff-btn" onclick="startMode('normal')">ノーマル</button>
+                        <button id="btn-pro" type="button" class="pill-btn diff-btn" onclick="startMode('pro')">プロ</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-ui-area"></div>
+        </div>
+
+        <div id="game-wrapper" class="screen hidden">
+            <div class="top-img-area" id="screen-area">
+                <img id="bg-image" src="" alt="背景">
+                <div id="number-display">--</div>
+                <div id="anim-container">
+                    <img id="anim-img" src="" alt="">
+                </div>
+                <div id="counter">
+                    <span id="current-q">1</span>
+                    <span class="slash">/</span>
+                    <span id="max-q">100</span>
+                </div>
+            </div>
+            <div class="bottom-ui-area" id="ui-area">
+                <div id="button-container">
+                    <button id="btn-circle" onclick="answer('yes')">はい</button>
+                    <button id="btn-cross" onclick="answer('no')">いいえ</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="screen hidden" onclick="location.reload()">
+            <img src="images/result.png" class="screen-bg-absolute" alt="リザルト">
+            <div id="result-content">
+                <div id="res-mode" class="text-yellow"></div>
+                <div id="best-score-label" class="text-yellow hidden">ベストスコア更新！</div>
+                <div>あなたのレコード</div>
+                <div>正解数：<span id="res-correct">0</span></div>
+                <div id="res-time">0時間 0分 0秒</div>
+                <div>取得した日時：</div>
+                <div id="res-date"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function resizeApp() {
+            const app = document.getElementById('app');
+            const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+            app.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeApp);
+        document.addEventListener('DOMContentLoaded', resizeApp);
+
+        const GAME_CONFIG = {
+            maxQuestions: 100,
+            numberMin: 1,
+            numberMax: 99,
+            delayNextQuestion: 600,
+            delayAudioOh: 0,
+            fileBg: 'images/bg.png',
+            fileCorrect: 'images/YES.png',
+            fileWrong: 'images/NO.png',
+            audioOh: 'sounds/Oh.mp3',
+            audioYesOk: 'sounds/yes_ok.m4a',
+            audioYesOmg: 'sounds/yes_omg.m4a',
+            audioNoOk: 'sounds/no_ok.m4a',
+            audioNoOmg: 'sounds/no_omg.m4a',
+            answerVolumeRate: 0.5,
+            defaultVolume: 100,
+            loadingBeforeGameMs: 3000,
+            audioBgm: 'sounds/bgm.mp3',
+            bgmVolumeRate: 0.25,
+            audioHakusyu: 'sounds/hakusyu.mp3'
+        };
+
+        let currentQuestion = 1;
+        let currentNumber = 0;
+        let isAnimating = false;
+
+        let correctCount = 0;
+        let startTime = 0;
+        let currentMode = 'normal';
+        let currentLanguage = 'ja';
+
+        let currentTutorialStep = 0;
+        const tutorialTexts = [
+            "３か４の倍数なら<br>はい",
+            "３か４の倍数<br>じゃないなら<br>いいえ",
+            "100回カウントしたら<br>ゲームクリアだよ、<br>レッツスタート"
+        ];
+
+        const currentQText = document.getElementById('current-q');
+        const maxQText = document.getElementById('max-q');
+        const numberDisplay = document.getElementById('number-display');
+        const animImg = document.getElementById('anim-img');
+        const btnCircle = document.getElementById('btn-circle');
+        const btnCross = document.getElementById('btn-cross');
+
+        document.getElementById('bg-image').src = GAME_CONFIG.fileBg;
+        maxQText.textContent = GAME_CONFIG.maxQuestions;
+
+        const sndOh = new Audio(GAME_CONFIG.audioOh);
+        const sndYesOk = new Audio(GAME_CONFIG.audioYesOk);
+        const sndYesOmg = new Audio(GAME_CONFIG.audioYesOmg);
+        const sndNoOk = new Audio(GAME_CONFIG.audioNoOk);
+        const sndNoOmg = new Audio(GAME_CONFIG.audioNoOmg);
+        const sndHakusyu = new Audio(GAME_CONFIG.audioHakusyu);
+        const sndDecide = new Audio('sounds/決定音.mp3');
+        const sndBgm = new Audio(GAME_CONFIG.audioBgm);
+        sndBgm.loop = true;
+
+        function startBgm() {
+            if (!sndBgm.paused) return;
+            sndBgm.play().catch(e => {});
+        }
+
+        // ===== VOLUME / SETTINGS =====
+        const gameSounds = [sndOh, sndHakusyu];
+        const answerSounds = [sndYesOk, sndYesOmg, sndNoOk, sndNoOmg];
+        const systemSounds = [sndDecide];
+        const volumeTypes = ['music', 'game', 'system', 'master'];
+        const volumeSettings = {};
+        let tutorialEnabled = true;
+
+        function resetSettingValues() {
+            volumeTypes.forEach(type => { volumeSettings[type] = GAME_CONFIG.defaultVolume; });
+            tutorialEnabled = true;
+        }
+
+        function applyVolumes() {
+            const master = volumeSettings.master / 100;
+            const gameVolume = (volumeSettings.game / 100) * master;
+            const systemVolume = (volumeSettings.system / 100) * master;
+            const musicVolume = (volumeSettings.music / 100) * master;
+            sndBgm.volume = musicVolume * GAME_CONFIG.bgmVolumeRate;
+            gameSounds.forEach(snd => { snd.volume = gameVolume; });
+            answerSounds.forEach(snd => { snd.volume = gameVolume * GAME_CONFIG.answerVolumeRate; });
+            systemSounds.forEach(snd => { snd.volume = systemVolume; });
+        }
+
+        function updateSettingUI() {
+            volumeTypes.forEach(type => {
+                const slider = document.getElementById('vol-' + type);
+                slider.value = volumeSettings[type];
+                slider.style.setProperty('--fill', volumeSettings[type] + '%');
+            });
+            document.getElementById('tutorial-on').classList.toggle('selected', tutorialEnabled);
+            document.getElementById('tutorial-off').classList.toggle('selected', !tutorialEnabled);
+        }
+
+        resetSettingValues();
+        applyVolumes();
+
+        function stopEffectSounds(exceptAudio) {
+            [...gameSounds, ...answerSounds, ...systemSounds].forEach(snd => {
+                if (snd === exceptAudio) return;
+                snd.pause();
+                snd.currentTime = 0;
+            });
+        }
+
+        function playDecide() {
+            stopEffectSounds(sndDecide);
+            sndDecide.currentTime = 0;
+            sndDecide.play().catch(e => {});
+        }
+
+        function wait(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function waitAnimationEnd(element) {
+            return new Promise(resolve => {
+                element.addEventListener('animationend', resolve, { once: true });
+            });
+        }
+
+        function playAudioAsync(audioObj) {
+            return new Promise(resolve => {
+                stopEffectSounds(audioObj);
+                audioObj.currentTime = 0;
+                audioObj.onended = resolve;
+                audioObj.onpause = resolve;
+                audioObj.play().catch(e => { resolve(); });
+            });
+        }
+
+        function fitLoadingImageToBackground() {
+            const loadingImg = document.getElementById('loading-img');
+            const area = loadingImg.closest('.top-img-area');
+            const bgImg = area.querySelector('img.screen-bg');
+            if (!bgImg.naturalWidth || !bgImg.naturalHeight) return;
+            const scale = Math.min(area.clientWidth / bgImg.naturalWidth, area.clientHeight / bgImg.naturalHeight);
+            loadingImg.style.width = (bgImg.naturalWidth * scale) + 'px';
+            loadingImg.style.height = (bgImg.naturalHeight * scale) + 'px';
+            loadingImg.style.objectFit = 'fill';
+        }
+
+        function showLoadingScreen() {
+            playDecide();
+            document.getElementById('title-screen').onclick = null;
+            document.getElementById('title-screen').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            fitLoadingImageToBackground();
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('menu-screen').classList.remove('hidden');
+                startBgm();
+            }, 5000);
+        }
+
+        function showTutorial() {
+            document.getElementById('tutorial-screen').classList.remove('hidden');
+            currentTutorialStep = 0;
+            document.getElementById('tutorial-text').innerHTML = tutorialTexts[currentTutorialStep];
+        }
+
+        function nextTutorial() {
+            playDecide();
+            currentTutorialStep++;
+            if (currentTutorialStep >= tutorialTexts.length) {
+                startGame();
+            } else {
+                document.getElementById('tutorial-text').innerHTML = tutorialTexts[currentTutorialStep];
+            }
+        }
+
+        function showDifficultyModal() {
+            playDecide();
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('difficulty-modal').classList.remove('hidden');
+        }
+
+        function showRecordList() {
+            playDecide();
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('record-list-screen').classList.remove('hidden');
+
+            const normData = JSON.parse(localStorage.getItem('twoOrThreeGameRecord_normal'));
+            const proData = JSON.parse(localStorage.getItem('twoOrThreeGameRecord_pro'));
+
+            const msToTime = (ms) => {
+                const s = Math.floor((ms / 1000) % 60);
+                const m = Math.floor((ms / (1000 * 60)) % 60);
+                return `${m}分${s}秒`;
+            };
+
+            document.getElementById('record-text-normal').textContent = normData ? `${normData.correct}問正解 / ${msToTime(normData.time)}` : 'きろくなし';
+            document.getElementById('record-text-pro').textContent = proData ? `${proData.correct}問正解 / ${msToTime(proData.time)}` : 'きろくなし';
+        }
+
+        function showSetting() {
+            playDecide();
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('setting-screen').classList.remove('hidden');
+            updateSettingUI();
+        }
+
+        function backToMenu(currentScreenId) {
+            playDecide();
+            document.getElementById(currentScreenId).classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+        }
+
+        function changeVolume(type, val) {
+            volumeSettings[type] = Number(val);
+            applyVolumes();
+            updateSettingUI();
+        }
+
+        function setTutorialEnabled(enabled) {
+            playDecide();
+            tutorialEnabled = enabled;
+            updateSettingUI();
+        }
+
+        function resetSettings() {
+            playDecide();
+            resetSettingValues();
+            applyVolumes();
+            updateSettingUI();
+        }
+
+        function showLanguage() {
+            playDecide();
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('language-screen').classList.remove('hidden');
+            updateLanguageButtons();
+        }
+
+        function setLanguage(lang) {
+            playDecide();
+            currentLanguage = lang;
+            updateLanguageButtons();
+        }
+
+        function updateLanguageButtons() {
+            document.getElementById('lang-btn-ja').classList.toggle('selected', currentLanguage === 'ja');
+            document.getElementById('lang-btn-en').classList.toggle('selected', currentLanguage === 'en');
+        }
+
+        function startMode(mode) {
+            playDecide();
+            currentMode = mode;
+            document.getElementById('difficulty-modal').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+            fitLoadingImageToBackground();
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                if (tutorialEnabled) {
+                    showTutorial();
+                } else {
+                    startGame();
+                }
+            }, GAME_CONFIG.loadingBeforeGameMs);
+        }
+
+        function startGame() {
+            document.getElementById('tutorial-screen').classList.add('hidden');
+            document.getElementById('game-wrapper').classList.remove('hidden');
+
+            currentQuestion = 1;
+            correctCount = 0;
+            startTime = Date.now();
+
+            updateCounter();
+            generateNumber();
+        }
+
+        function generateNumber() {
+            if (currentMode === 'pro') {
+                const r = Math.random();
+                let pool = [];
+                if (r < 0.1) {
+                    pool = [3,6,9,12,15,18,21,24,27,30,33,36,39,42,45,48,51,54,57,60,63,66,69,72,75,78,81,84,87,90,93,96,99];
+                } else if (r < 0.55) {
+                    pool = [4,8,16,20,28,32,40,44,52,56,64,68,76,80,88,92];
+                } else {
+                    pool = [1,2,5,7,10,11,13,14,17,19,22,23,25,26,29,31,34,35,37,38,41,43,46,47,49,50,53,55,58,59,61,62,65,67,70,71,73,74,77,79,82,83,85,86,89,91,94,95,97,98];
+                }
+                currentNumber = pool[Math.floor(Math.random() * pool.length)];
+            } else {
+                const min = GAME_CONFIG.numberMin;
+                const max = GAME_CONFIG.numberMax;
+                currentNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            numberDisplay.textContent = currentNumber;
+            numberDisplay.classList.remove('hidden');
+
+            if (GAME_CONFIG.delayAudioOh <= 0) {
+                playAudioAsync(sndOh);
+            } else {
+                setTimeout(() => { playAudioAsync(sndOh); }, GAME_CONFIG.delayAudioOh);
+            }
+        }
+
+        function updateCounter() {
+            currentQText.textContent = currentQuestion;
+        }
+
+        async function answer(playerChoice) {
+            if (isAnimating) return;
+            isAnimating = true;
+            btnCircle.disabled = true;
+            btnCross.disabled = true;
+
+            numberDisplay.classList.add('hidden');
+
+            const isYesTarget = (currentNumber % 3 === 0 || currentNumber % 4 === 0);
+            const playerAnsweredYes = (playerChoice === 'yes');
+            const isCorrect = (isYesTarget === playerAnsweredYes);
+
+            if (isCorrect) { correctCount++; }
+
+            animImg.className = '';
+            animImg.style.opacity = 1;
+            animImg.src = isCorrect ? GAME_CONFIG.fileCorrect : GAME_CONFIG.fileWrong;
+
+            void animImg.offsetWidth;
+            const animEnd = waitAnimationEnd(animImg);
+            animImg.classList.add('zoom-anim');
+
+            const answerAudio = playerAnsweredYes
+                ? (isCorrect ? sndYesOk : sndYesOmg)
+                : (isCorrect ? sndNoOk : sndNoOmg);
+
+            await Promise.all([
+                playAudioAsync(answerAudio),
+                wait(GAME_CONFIG.delayNextQuestion),
+                animEnd
+            ]);
+
+            animImg.className = '';
+            animImg.style.opacity = 0;
+
+            if (currentQuestion < GAME_CONFIG.maxQuestions) {
+                currentQuestion++;
+                updateCounter();
+                generateNumber();
+                isAnimating = false;
+                btnCircle.disabled = false;
+                btnCross.disabled = false;
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('game-wrapper').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+
+            stopEffectSounds(sndHakusyu);
+            sndHakusyu.currentTime = 0;
+            sndHakusyu.play().catch(e => {});
+
+            const endTime = Date.now();
+            const timeMs = Math.max(0, endTime - startTime);
+
+            const h = Math.floor(timeMs / (1000 * 60 * 60));
+            const m = Math.floor((timeMs % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((timeMs % (1000 * 60)) / 1000);
+
+            const now = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const dateStr = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+            const modeText = currentMode === 'pro' ? '【 プロモード 】' : '【 ノーマルモード 】';
+            document.getElementById('res-mode').textContent = modeText;
+
+            document.getElementById('res-correct').textContent = correctCount;
+            document.getElementById('res-time').textContent = `${h}時間 ${m}分 ${s}秒`;
+            document.getElementById('res-date').textContent = dateStr;
+
+            const currentScore = { correct: correctCount, time: timeMs };
+
+            let isBest = false;
+            const recordKey = 'twoOrThreeGameRecord_' + currentMode;
+            const saved = localStorage.getItem(recordKey);
+
+            if (saved) {
+                const bestScore = JSON.parse(saved);
+                if (currentScore.correct > bestScore.correct ||
+                   (currentScore.correct === bestScore.correct && currentScore.time < bestScore.time)) {
+                    isBest = true;
+                }
+            } else {
+                isBest = true;
+            }
+
+            const bestLabel = document.getElementById('best-score-label');
+            if (isBest) {
+                localStorage.setItem(recordKey, JSON.stringify(currentScore));
+                bestLabel.classList.remove('hidden');
+            } else {
+                bestLabel.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.key === 'd' || e.key === 'D') && !document.getElementById('title-screen').classList.contains('hidden')) {
+                document.getElementById('title-screen').classList.add('hidden');
+                currentMode = 'normal';
+                correctCount = 99;
+                startTime = Date.now() - (1000 * 60 * 5);
+                showResult();
+            }
+        });
+    </script>
+</body>
+</html>
